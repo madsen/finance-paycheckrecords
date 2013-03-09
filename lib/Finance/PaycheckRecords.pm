@@ -282,7 +282,9 @@ sub paystub_to_QIF
 #---------------------------------------------------------------------
 sub _add_splits
 {
-  my ($splits, $paystub, $config, $sign) = @_;
+  my ($all_splits, $paystub, $config, $sign) = @_;
+
+  my @splits;
 
   while (my ($section, $fields) = each %$config) {
     while (my ($field, $values) = each %{ $paystub->{split}{$section} }) {
@@ -292,9 +294,14 @@ sub _add_splits
       croak("Don't know what to do with $section: '$field'")
           unless $fields->{$field};
 
-      push @$splits, [ $sign . $values->{$current}, @{ $fields->{$field} } ];
+      push @splits, [ $sign . $values->{$current}, @{ $fields->{$field} } ];
     }
   }
+
+  # Sort splits in ascending order by category name, and
+  # descending order by absolute value within a category:
+  push @$all_splits, sort {     $a->[1]  cmp     $b->[1] or
+                            abs($b->[0]) <=> abs($a->[0]) } @splits;
 } # end _add_splits
 
 #=====================================================================
