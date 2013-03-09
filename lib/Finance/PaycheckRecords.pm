@@ -51,8 +51,9 @@ our $current = 'Current';
   $paystub = parse_paystub(file => $filename_or_filehandle);
   $paystub = parse_paystub(string => $html);
 
-This parses an HTML printer-friendly paystub and extracts the data
-from it.  C<$paystub> is a hashref with the following keys:
+This parses an HTML printer-friendly paystub stored in a file or
+string and extracts the data from it.  C<$paystub> is a hashref with
+the following keys:
 
 =over
 
@@ -84,40 +85,6 @@ A hashref keyed by section name (e.g. C<PAY> or C<TAXES WITHHELD>).
 Each value is another hashref with an entry for each row of the table,
 keyed by the first column.  That value is a hashref keyed by column name.
 
-An example should make this clearer.  A paycheck that looks like this:
-
-  PAY    Hours Rate  Current    YTD
-  Salary             1766.65 1766.65
-
-  TAXES WITHHELD     Current    YTD
-  Federal Income Tax  333.33  333.33
-  Social Security     222.22  222.22
-  Medicare             99.99   99.99
-
-  SUMMARY     Current     YTD
-  Total Pay   1766.65  1766.65
-  Deductions     0.00     0.00
-  Taxes        655.54   655.54
-
-Would produce this hashref:
-
-  {
-    'PAY' => {
-      Salary => { Current => '1766.65', Hours => '', Rate => '',
-                  YTD     => '1766.65' },
-    },
-    'TAXES WITHHELD' => {
-      'Federal Income Tax' => { Current => '333.33', YTD => '333.33' },
-      'Medicare'           => { Current =>  '99.99', YTD =>  '99.99' },
-      'Social Security'    => { Current => '222.22', YTD => '222.22' },
-    },
-    'SUMMARY' => {
-      'Deductions' => { Current =>    '0.00', YTD =>    '0.00' },
-      'Taxes'      => { Current =>  '655.54', YTD =>  '655.54' },
-      'Total Pay'  => { Current => '1766.65', YTD => '1766.65' },
-    },
-  }
-
 =item C<totals>
 
 A hashref containing the totals from the bottom of the check, keyed by
@@ -125,6 +92,57 @@ field name (e.g. C<'Net This Check'>).  Dollar signs, commas, and
 whitespace are removed from the values.
 
 =back
+
+An example should make this clearer.  A paystub that looks like this:
+
+                          Pay stub for period: 12/15/2012 - 12/28/2012
+  Big Employer
+  123 Any St.                                             Check # 3456
+  Big City, ST 12345                                  Date: 01/04/2013
+
+  John Q. Public                                Net Pay: $ 1111.11
+  789 Main St.
+  Apt. 234
+  My Town, ST 12567
+
+ PAY    Hours Rate Current    YTD    TAXES WITHHELD    Current    YTD
+ Salary            1766.65 1766.65   Federal Income Tax 333.33  333.33
+                                     Social Security    222.22  222.22
+                                     Medicare            99.99   99.99
+
+                                     SUMMARY           Current    YTD
+                                     Total Pay         1766.65 1766.65
+                                     Deductions           0.00    0.00
+                                     Taxes              655.54  655.54
+                                           Net This Check:   $1,111.11
+
+Would produce this hashref:
+
+ $paystub = {
+  check_number => 3456,
+  company      => "Big Employer\n123 Any St.\nBig City, ST 12345",
+  date         => "01/04/2013",
+  pay_period   => "12/15/2012 - 12/28/2012",
+  payee        => "John Q. Public\n789 Main St.\n" .
+                  "Apt. 234\nMy Town, ST 12567",
+  split        => {
+    'PAY' => {
+      Salary => { Current => '1766.65', Hours => '', Rate => '',
+                  YTD     => '1766.65' },
+    },
+    'TAXES WITHHELD' => {
+      'Federal Income Tax' => {Current => '333.33', YTD => '333.33'},
+      'Medicare'           => {Current =>  '99.99', YTD =>  '99.99'},
+      'Social Security'    => {Current => '222.22', YTD => '222.22'},
+    },
+    'SUMMARY' => {
+      'Deductions' => { Current =>    '0.00', YTD =>    '0.00' },
+      'Taxes'      => { Current =>  '655.54', YTD =>  '655.54' },
+      'Total Pay'  => { Current => '1766.65', YTD => '1766.65' },
+    },
+  },
+  totals       => { 'Net This Check' => '1111.11' },
+ };
 
 =cut
 
@@ -345,9 +363,13 @@ paystub.
 =head1 BUGS AND LIMITATIONS
 
 I don't know how consistent the layout of paystubs for different
-companies are.  If yours doesn't parse properly, please report a bug
-and attach a copy of one of your paystubs (after changing the numbers
-and/or addresses if you don't want to tell everyone your salary).
+companies are.  An example paystub is included as
+F<example/Paycheck-2013-01-04.html>.
+
+If your paystub doesn't parse properly, please report a bug (see the
+AUTHOR section) and attach a copy of one of your paystubs (after
+changing the numbers and/or names if you don't want to tell everyone
+your salary or employer).
 
 
 =head1 SEE ALSO
