@@ -6,6 +6,7 @@ META.yml
 Makefile.PL
 README
 example/Paycheck-2013-01-04.html
+example/paystub2qif.pl
 lib/Finance/PaycheckRecords.pm
 t/00-all_prereqs.t
 t/00-load.t
