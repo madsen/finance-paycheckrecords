@@ -1,7 +1,9 @@
 Finance-PaycheckRecords version {{$version}}, released {{$date}}
 
 
-This module {{ die "needs a description (README.md too)" }}.
+This module can parse paystubs from PaycheckRecords.com, so you can
+extract the information from them.  It also includes a function to
+generate a Quicken Interchange Format (QIF) record from a paystub.
 
 
 

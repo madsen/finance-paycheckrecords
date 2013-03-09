@@ -28,6 +28,12 @@ use Carp qw(croak);
 use HTML::TableExtract 2.10;
 use List::Util qw(sum);
 
+=head1 DEPENDENCIES
+
+Finance::PaycheckRecords requires {{$t->dependency_link('HTML::TableExtract')}}.
+
+=cut
+
 use Exporter 5.57 'import';     # exported import method
 our @EXPORT = qw(parse_paystub paystub_to_QIF);
 
@@ -39,6 +45,89 @@ our %parse_method = qw(
 our $current = 'Current';
 
 #=====================================================================
+
+=sub parse_paystub
+
+  $paystub = parse_paystub(file => $filename_or_filehandle);
+  $paystub = parse_paystub(string => $html);
+
+This parses an HTML printer-friendly paystub and extracts the data
+from it.  C<$paystub> is a hashref with the following keys:
+
+=over
+
+=item C<check_number>
+
+The check number, if available.  May be omitted for direct deposits.
+
+=item C<company>
+
+The name and address of the company as it appears on the paystub.
+
+=item C<date>
+
+The date of the check, in whatever format it was displayed on the
+paystub.
+
+=item C<pay_period>
+
+The pay period as it appears on the paystub.  Usually two dates
+separated by a hyphen and whitespace.
+
+=item C<payee>
+
+The name and address of the employee as it appears on the paystub.
+
+=item C<split>
+
+A hashref keyed by section name (e.g. C<PAY> or C<TAXES WITHHELD>).
+Each value is another hashref with an entry for each row of the table,
+keyed by the first column.  That value is a hashref keyed by column name.
+
+An example should make this clearer.  A paycheck that looks like this:
+
+  PAY    Hours Rate  Current    YTD
+  Salary             1766.65 1766.65
+
+  TAXES WITHHELD     Current    YTD
+  Federal Income Tax  333.33  333.33
+  Social Security     222.22  222.22
+  Medicare             99.99   99.99
+
+  SUMMARY     Current     YTD
+  Total Pay   1766.65  1766.65
+  Deductions     0.00     0.00
+  Taxes        655.54   655.54
+
+Would produce this hashref:
+
+  {
+    'PAY' => {
+      Salary => { Current => '1766.65', Hours => '', Rate => '',
+                  YTD     => '1766.65' },
+    },
+    'TAXES WITHHELD' => {
+      'Federal Income Tax' => { Current => '333.33', YTD => '333.33' },
+      'Medicare'           => { Current =>  '99.99', YTD =>  '99.99' },
+      'Social Security'    => { Current => '222.22', YTD => '222.22' },
+    },
+    'SUMMARY' => {
+      'Deductions' => { Current =>    '0.00', YTD =>    '0.00' },
+      'Taxes'      => { Current =>  '655.54', YTD =>  '655.54' },
+      'Total Pay'  => { Current => '1766.65', YTD => '1766.65' },
+    },
+  }
+
+=item C<totals>
+
+A hashref containing the totals from the bottom of the check, keyed by
+field name (e.g. C<'Net This Check'>).  Dollar signs, commas, and
+whitespace are removed from the values.
+
+=back
+
+=cut
+
 sub parse_paystub
 {
   my ($input_type, $input) = @_;
@@ -106,8 +195,53 @@ sub parse_paystub
 
   \%paystub;
 } # end parse_paystub
-
 #---------------------------------------------------------------------
+
+=sub paystub_to_QIF
+
+  $qif_entry = paystub_to_QIF($paystub, \%config);
+
+This function takes a C<$paystub> as returned from C<parse_paystub>
+and returns a QIF record with data from the paystub.  It returns only
+a single record; you'll need to add a header (e.g. C<"!Type:Bank\n">)
+to form a valid QIF file.
+
+The C<%config> hashref may contain the following keys:
+
+=over
+
+=item C<category>
+
+The QIF category to use for the deposit (default C<Income>).
+
+=item C<expenses>
+
+A hashref in the same format as C<income>, but values are subtracted
+from your income instead of added to it.
+
+=item C<income>
+
+A hashref that describes which entries in C<$paystub->{split}>
+describe income and what category to use for each row in that section.
+The key is the section name, and the value is a hashref keyed by the
+first column.  That value is an arrayref: S<C<[ $category, $memo ]>>.
+The C<$memo> may be omitted.  It croaks if the section contains a row
+that is not described here.  However, it is ok to have an entry that
+describes a row not found in the current paystub.
+
+=item C<memo>
+
+The QIF memo for this transaction
+(default C<< "Paycheck for $paystub->{pay_period}" >>).
+
+=item C<net_deposit>
+
+The name of the key in C<< $paystub->{totals} >> that contains the net
+deposit amount (default C<Net This Check>).
+
+=back
+
+=cut
 
 sub paystub_to_QIF
 {
@@ -173,3 +307,46 @@ __END__
 =head1 SYNOPSIS
 
   use Finance::PaycheckRecords;
+
+  my $paystub = parse_paystub(file => $filename);
+
+  print "!Type:Bank\n", paystub_to_QIF($paystub, {
+    category => 'Assets:MyBank',
+    memo     => $memo,
+    income => {
+      PAY => {
+        Salary => [ 'Income:Salary' ],
+      },
+    },
+    expenses => {
+      'TAXES WITHHELD' => {
+        'Federal Income Tax' => [ 'Expenses:Tax:Fed', 'Federal income tax' ],
+        'Medicare'        => [ 'Expenses:Tax:Medicare', 'Medicare tax' ],
+        'Social Security' => [ 'Expenses:Tax:Soc Sec', 'Social Security tax' ],
+      },
+    },
+  });
+
+=head1 DESCRIPTION
+
+Finance::PaycheckRecords can parse paystubs from PaycheckRecords.com,
+so you can extract the information from them.  It also includes a
+function to generate a Quicken Interchange Format (QIF) record from a
+paystub.
+
+
+=head1 BUGS AND LIMITATIONS
+
+I don't know how consistent the layout of paystubs for different
+companies are.  If yours doesn't parse properly, please report a bug
+and attach a copy of one of your paystubs (after changing the numbers
+and/or addresses if you don't want to tell everyone your salary).
+
+
+=head1 SEE ALSO
+
+L<Finance::PaycheckRecords::Fetcher> can be used to automatically
+download paystubs from PaycheckRecords.com.
+
+The Quicken Interchange Format (QIF):
+L<http://web.archive.org/web/20100222214101/http://web.intuit.com/support/quicken/docs/d_qif.html>
