@@ -11,5 +11,5 @@ lib/Finance/PaycheckRecords.pm
 t/00-all_prereqs.t
 t/00-load.t
 t/10-example.t
-t/release-pod-coverage.t
-t/release-pod-syntax.t
+xt/release/pod-coverage.t
+xt/release/pod-syntax.t
