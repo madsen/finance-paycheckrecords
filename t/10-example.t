@@ -14,6 +14,16 @@ use Test::More 0.88; # done_testing
 
 plan tests => 5;
 
+# Load Test::Differences, if available:
+BEGIN {
+  if (eval "use Test::Differences; 1") {
+    # Not all versions of Test::Differences support changing the style:
+    eval { Test::Differences::unified_diff() }
+  } else {
+    eval '*eq_or_diff = \&is;'; # Just use "is" instead
+  }
+} # end BEGIN
+
 use Finance::PaycheckRecords;
 
 #---------------------------------------------------------------------
