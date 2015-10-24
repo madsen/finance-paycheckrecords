@@ -21,7 +21,7 @@ use 5.010;
 use strict;
 use warnings;
 
-our $VERSION = '1.000';
+our $VERSION = '1.001';
 # This file is part of {{$dist}} {{$dist_version}} ({{$date}})
 
 use Carp qw(croak);
@@ -266,8 +266,8 @@ deposit amount (default C<Net This Check>).
 
 =back
 
-The F<example> directory in this distribution contains a sample
-paystub along with a program to generate a complete QIF file from it.
+The F<example> directory in this distribution contains sample
+paystubs along with a program to generate a complete QIF file from one.
 
 =cut
 
@@ -373,8 +373,9 @@ paystub.
 =head1 BUGS AND LIMITATIONS
 
 I don't know how consistent the layout of paystubs for different
-companies are.  An example paystub is included as
-F<example/Paycheck-2013-01-04.html>.
+companies are.  Two example paystubs are included as
+F<example/Paycheck-2013-01-04.html> (printed check) and
+F<example/Paycheck-2015-10-23.html> (direct deposit).
 
 If your paystub doesn't parse properly, please report a bug (see the
 AUTHOR section) and attach a copy of one of your paystubs (after

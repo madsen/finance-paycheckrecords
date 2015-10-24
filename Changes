@@ -1,5 +1,8 @@
 Revision history for Finance-PaycheckRecords
 
+1.001  NOT
+	- Add 20-example-deposit.t and example direct deposit paycheck
+
 1.000  2014-07-05
 	- Call eof on HTML::TableExtract after parsing string
 	- Minor documentation improvements
